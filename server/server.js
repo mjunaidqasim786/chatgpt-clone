@@ -1,128 +1,177 @@
-import express from 'express'
-import cors from 'cors'
-import { Configuration, OpenAIApi } from 'openai'
-import * as dotenv from 'dotenv'
-import Filter from 'bad-words'
-import { rateLimitMiddleware } from './middlewares/rateLimitMiddleware.js'
+// import express from 'express'
+// import cors from 'cors'
+// import { Configuration, OpenAIApi } from 'openai'
+// import * as dotenv from 'dotenv'
+// import Filter from 'bad-words'
+// import { rateLimitMiddleware } from './middlewares/rateLimitMiddleware.js'
 
-const allowedOrigins = ['http://eyucoder.com', 'https://chatgpt.eyucoder.com', 'http://localhost']
+// const allowedOrigins = ['http://eyucoder.com', 'https://chatgpt.eyucoder.com', 'http://localhost']
 
-const filter = new Filter()
+// const filter = new Filter()
 
-// Load environment variables from .env file
-try {
-  dotenv.config()
-} catch (error) {
-  console.error('Error loading environment variables:', error)
-  process.exit(1)
-}
+// // Load environment variables from .env file
+// try {
+//   dotenv.config()
+// } catch (error) {
+//   console.error('Error loading environment variables:', error)
+//   process.exit(1)
+// }
 
-// Create OpenAI configuration
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// // Create OpenAI configuration
+// const configuration = new Configuration({
+//   apiKey: process.env.OPENAI_API_KEY,
+// })
 
-// Create OpenAI API client
-const openai = new OpenAIApi(configuration)
+// // Create OpenAI API client
+// const openai = new OpenAIApi(configuration)
 
-// Create Express app
-const app = express()
+// // Create Express app
+// const app = express()
 
 
-// Parse JSON in request body
-app.use(express.json())
+// // Parse JSON in request body
+// app.use(express.json())
 
-// Enable CORS
-app.use(cors())
+// // Enable CORS
+// app.use(cors())
 
-// ratelimiter middleware function
-app.use('/davinci', rateLimitMiddleware)
-app.use('/dalle', rateLimitMiddleware)
+// // ratelimiter middleware function
+// app.use('/davinci', rateLimitMiddleware)
+// app.use('/dalle', rateLimitMiddleware)
 
-/**
- * GET /
- * Returns a simple message.
- */
-app.get('/', (req, res) => {
-  res.status(200).send({
-    message: 'Hello World!',
-  })
-})
+// /**
+//  * GET /
+//  * Returns a simple message.
+//  */
+// app.get('/', (req, res) => {
+//   res.status(200).send({
+//     message: 'Hello World!',
+//   })
+// })
 
-/**
- * POST /davinci
- * Returns a response from OpenAI's text completion model.
- */
-app.post('/davinci', async (req, res) => {
-  // Validate request body
-  if (!req.body.prompt) {
-    return res.status(400).send({
-      error: 'Missing required field "prompt" in request body',
-    })
-  }
+// /**
+//  * POST /davinci
+//  * Returns a response from OpenAI's text completion model.
+//  */
+// app.post('/davinci', async (req, res) => {
+//   // Validate request body
+//   if (!req.body.prompt) {
+//     return res.status(400).send({
+//       error: 'Missing required field "prompt" in request body',
+//     })
+//   }
 
-  try {
-    // Call OpenAI API
-    const prompt = req.body.prompt
-    const cleanPrompt = filter.isProfane(prompt) ? filter.clean(prompt) : prompt
-    console.log(cleanPrompt)
+//   try {
+//     // Call OpenAI API
+//     const prompt = req.body.prompt
+//     const cleanPrompt = filter.isProfane(prompt) ? filter.clean(prompt) : prompt
+//     console.log(cleanPrompt)
 
-    const response = await openai.createCompletion({
-      model: 'text-davinci-003',
-      prompt: `
-I want you to reply to all my questions in markdown format. 
-Q: ${cleanPrompt}?.
-A: `,
-      temperature: 0.5,
-      max_tokens: 500,
-      top_p: 0.5,
-      frequency_penalty: 0.5,
-      presence_penalty: 0.2,
-    })
+//     const response = await openai.createCompletion({
+//       model: 'text-davinci-003',
+//       prompt: `
+// I want you to reply to all my questions in markdown format. 
+// Q: ${cleanPrompt}?.
+// A: `,
+//       temperature: 0.5,
+//       max_tokens: 500,
+//       top_p: 0.5,
+//       frequency_penalty: 0.5,
+//       presence_penalty: 0.2,
+//     })
 
-    console.log(response.data.choices[0].text)
-    // Return response from OpenAI API
-    res.status(200).send({
-      bot: response.data.choices[0].text,
-      limit: res.body.limit
-    })
-  } catch (error) {
-    // Log error and return a generic error message
-    console.error(error)
-    res.status(500).send({
-      error: 'Something went wrong',
-    })
-  }
-})
+//     console.log(response.data.choices[0].text)
+//     // Return response from OpenAI API
+//     res.status(200).send({
+//       bot: response.data.choices[0].text,
+//       limit: res.body.limit
+//     })
+//   } catch (error) {
+//     // Log error and return a generic error message
+//     console.error(error)
+//     res.status(500).send({
+//       error: 'Something went wrong',
+//     })
+//   }
+// })
 
-/**
- * POST /dalle
- * Returns a response from OpenAI's image generation model.
- */
-app.post('/dalle', async (req, res) => {
-  const prompt = req.body.prompt
+// /**
+//  * POST /dalle
+//  * Returns a response from OpenAI's image generation model.
+//  */
+// app.post('/dalle', async (req, res) => {
+//   const prompt = req.body.prompt
 
-  try {
-    const response = await openai.createImage({
-      prompt: `${prompt}`,
-      n: 1,
-      size: "256x256",
-    })
+//   try {
+//     const response = await openai.createImage({
+//       prompt: `${prompt}`,
+//       n: 1,
+//       size: "256x256",
+//     })
 
-    console.log(response.data.data[0].url)
-    res.status(200).send({
-      bot: response.data.data[0].url,
-      limit: res.body.limit
-    })
-  } catch (error) {
-    // Log error and return a generic error message
-    console.error(error)
-    res.status(500).send({
-      error: 'Something went wrong',
-    })
-  }
-})
+//     console.log(response.data.data[0].url)
+//     res.status(200).send({
+//       bot: response.data.data[0].url,
+//       limit: res.body.limit
+//     })
+//   } catch (error) {
+//     // Log error and return a generic error message
+//     console.error(error)
+//     res.status(500).send({
+//       error: 'Something went wrong',
+//     })
+//   }
+// })
 
-// Start server
-const port = process.env.PORT || 3001
-app.listen(port, () => console.log(`Server listening on port ${port}`))
+// // Start server
+// const port = process.env.PORT || 3001
+// app.listen(port, () => console.log(`Server listening on port ${port}`))
+
+
+
+const express = require('express');
+const https = require('https');
+const app = express();
+
+const apiKey = "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";
+const endpoint = "https://api.openai.com/v1/engines/davinci/jobs";
+
+app.get('/davinci', (req, res) => {
+  const data = JSON.stringify({
+    model: "text-davinci-002",
+    prompt: req.body.prompt
+  });
+
+  const options = {
+    hostname: "api.openai.com",
+    path: "/v1/engines/davinci/jobs",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Length": data.length
+    }
+  };
+
+  const request = https.request(options, response => {
+    let responseData = '';
+    response.on('data', chunk => {
+      responseData += chunk;
+    });
+
+    response.on('end', () => {
+      const responseJson = JSON.parse(responseData);
+      const answer = responseJson.choices[0].text;
+      res.send(answer);
+    });
+  });
+
+  request.write(data);
+  request.end();
+});
+
+const port = process.env.PORT || 3001;
+app.listen(port, () => {
+  console.log(`Listening on port ${port}`);
+});
+
